@@ -9,13 +9,9 @@ environment:
     secure: ipv/06DzgA7pzz2CIAtbPxZSsphDtF+JFyoWRnXkn3O8j7oRe3rzqj3LOoq2DZp4
 
   matrix:
-    - TARGET_ARCH: x86
-      CONDA_PY: 27
-      CONDA_INSTALL_LOCN: C:\\Miniconda
+    - CONFIG: appveyor_target_platformwin-32
 
-    - TARGET_ARCH: x64
-      CONDA_PY: 27
-      CONDA_INSTALL_LOCN: C:\\Miniconda-x64
+    - CONFIG: appveyor_target_platformwin-64
 
 
 # We always use a 64-bit machine, but can build x86 distributions
@@ -32,8 +28,9 @@ install:
     - cmd: rmdir C:\cygwin /s /q
 
     # Add path, activate `conda` and update conda.
-    - cmd: call %CONDA_INSTALL_LOCN%\Scripts\activate.bat
-    - cmd: conda.exe update --yes --quiet conda
+    # Around November of 2017, Appveyor changed Miniconda3-x64 from an old 3.4 install to a
+    #     symlink to the current version.
+    - cmd: call C:\Miniconda3-x64\Scripts\activate.bat
 
     - cmd: set PYTHONUNBUFFERED=1
 
@@ -44,7 +41,7 @@ install:
     - cmd: conda.exe config --add channels conda-forge
 
     # Configure the VM.
-    - cmd: conda.exe install -n root --quiet --yes conda-forge-build-setup
+    - cmd: conda.exe install -n root --quiet --yes conda-forge-ci-setup=1
     # Overriding global conda-forge-build-setup with local copy.
     - cmd: recipe\run_conda_forge_build_setup_win
 
@@ -52,6 +49,6 @@ install:
 build: off
 
 test_script:
-    - conda.exe build recipe --quiet
+    - conda.exe build recipe -m .ci_support\%CONFIG%.yaml --quiet
 deploy_script:
-    - cmd: recipe\upload_or_check_non_existence .\recipe conda-forge --channel=main
+    - cmd: upload_or_check_non_existence .\recipe conda-forge --channel=main -m .ci_support\%CONFIG%.yaml
